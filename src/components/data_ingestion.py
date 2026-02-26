@@ -11,6 +11,12 @@ from src.logger import logging
 # 2. Validation Connection
 from src.components.data_validation import DataValidation
 
+# 3.data Transformation Connection
+from src.components.data_transformation import DataTransformation
+from src.components.data_transformation import DataTransformationConfig
+
+
+
 @dataclass
 class DataIngestionConfig:
     train_data_path: str = os.path.join("artifacts", "train.csv")
@@ -41,7 +47,8 @@ class DataIngestion:
                 'loan_percent_income': 'loan_to_income_ratio',
                 'cb_person_cred_hist_length': 'credit_history_length_years',
                 'credit_score': 'credit_score',
-                'previous_loan_defaults_on_file': 'prior_default_flag'
+                'previous_loan_defaults_on_file': 'prior_default_flag',
+                'loan_status':'loan_status'
             })
             logging.info("Columns renamed successfully")
 
@@ -66,19 +73,32 @@ class DataIngestion:
             raise CustomException(e, sys)
 
 if __name__ == "__main__":
-    # 1. Ingestion
-    obj = DataIngestion()
-    train_data, test_data = obj.initiate_data_ingestion()
+    try:
+        # 1. DATA INGESTION
+        obj = DataIngestion()
+        train_data, test_data = obj.initiate_data_ingestion()
 
+        # 2. DATA VALIDATION
+        from src.components.data_validation import DataValidation
+        validation = DataValidation()
+        validation_status = validation.validate_all_columns()
+        
+        if validation_status:
+            logging.info("Data Validation Passed. Proceeding to Transformation...")
+            
+            # 3. DATA TRANSFORMATION
+            from src.components.data_transformation import DataTransformation
+            data_transformation = DataTransformation()
+            # This returns the combined numpy arrays (X and y together)
+            train_arr, test_arr, preprocessor_path = data_transformation.initiate_data_transformation(train_data, test_data)
 
-    
-    validation = DataValidation()
-    validation_status = validation.validate_all_columns()
-    
-    if validation_status:
-        logging.info("Data Validation Passed. Proceeding to Transformation...")
-        # 3. Next step: Data Transformation
-        # transformation = DataTransformation()
-        # ...
-    else:
-        logging.error("Data Validation Failed! Check artifacts/validation_status.txt")
+            # 4. MODEL TRAINING
+        
+        else:
+            logging.error("Data Validation Failed! Check artifacts/validation_status.txt")
+            print("Pipeline stopped: Data format is incorrect.")
+
+    except Exception as e:
+        from src.exception import CustomException
+        import sys
+        raise CustomException(e, sys)

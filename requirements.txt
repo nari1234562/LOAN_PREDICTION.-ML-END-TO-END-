@@ -4,4 +4,8 @@ seaborn
 matplotlib
 scikit-learn
 openpyxl
+dill
+xgboost
+lightgbm
 -e .
+
