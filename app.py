@@ -1,5 +1,5 @@
-
-from flask import Flask, request, jsonify, render_template
+# app.py
+from flask import Flask, request, render_template
 from src.pipeline.predict_pipeline import CustomData, PredictPipeline
 
 app = Flask(__name__)
@@ -7,42 +7,6 @@ predict_pipeline = PredictPipeline()  # Load model + preprocessor once at startu
 THRESHOLD = 0.6  # Threshold for classifying rejection
 
 
-#  REST API 
-@app.route("/api", methods=["GET"])
-def api_home():
-    return jsonify({"message": "Loan Prediction REST API is running!"})
-
-
-@app.route("/predict", methods=["POST"])
-def predict_api():
-    """
-    REST API endpoint for JSON POST requests (Postman)
-    """
-    try:
-        data = request.get_json()
-        if data is None:
-            return jsonify({"error": "No JSON payload provided"}), 400
-
-        custom_data = CustomData(**data)
-        input_df = custom_data.get_data_as_dataframe()
-
-        prediction, probability = predict_pipeline.predict(input_df)
-        prob = float(probability[0]) if probability[0] is not None else None
-        status = "Loan Rejected" if prob >= THRESHOLD else "Loan Approved" if prob is not None else "Unknown"
-
-        return jsonify({
-            "prediction": int(prediction[0]),
-            "status": status,
-            "probability": prob
-        })
-
-    except TypeError as te:
-        return jsonify({"error": f"TypeError: {str(te)}"}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-#  Web App 
 @app.route("/", methods=["GET"])
 def home():
     """
@@ -74,14 +38,22 @@ def predict_web():
             "prior_default_flag": request.form.get("prior_default_flag")
         }
 
+      
         custom_data = CustomData(**data)
         input_df = custom_data.get_data_as_dataframe()
 
+        
         prediction, probability = predict_pipeline.predict(input_df)
         prob = float(probability[0]) if probability[0] is not None else None
         status = "Loan Rejected" if prob >= THRESHOLD else "Loan Approved" if prob is not None else "Unknown"
 
-        return render_template("index.html", prediction=int(prediction[0]), status=status, probability=prob, form_data=data)
+        return render_template(
+            "index.html",
+            prediction=int(prediction[0]),
+            status=status,
+            probability=prob,
+            form_data=data
+        )
 
     except Exception as e:
         return render_template("index.html", error=str(e))
