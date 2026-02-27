@@ -41,9 +41,6 @@ class DataTransformation:
 
             ordinal_column = ['education_level']
 
-            # ==============================
-            # NUMERICAL PIPELINE
-            # ==============================
             num_pipeline = Pipeline(
                 steps=[
                     ("imputer", SimpleImputer(strategy="median")),
@@ -51,19 +48,15 @@ class DataTransformation:
                 ]
             )
 
-            # ==============================
-            # CATEGORICAL PIPELINE
-            # ==============================
+    
             cat_pipeline = Pipeline([
                 ('imputer', SimpleImputer(strategy='most_frequent')),
                 ('encoder', OneHotEncoder(handle_unknown='ignore',
-                                          sparse_output=False,
-                                          drop='first'))
+                                        sparse_output=False,
+                                        drop='first'))
             ])
 
-            # ==============================
-            # ORDINAL PIPELINE
-            # ==============================
+        
             education_order = [[
                 'High School',
                 'Associate',
@@ -77,9 +70,7 @@ class DataTransformation:
                 ('encoder', OrdinalEncoder(categories=education_order))
             ])
 
-            # ==============================
-            # COLUMN TRANSFORMER
-            # ==============================
+    
             column_transformer = ColumnTransformer(
                 [
                     ("num_pipeline", num_pipeline, numerical_columns),
@@ -87,11 +78,6 @@ class DataTransformation:
                     ("ordinal_pipeline", ordinal_pipeline, ordinal_column)
                 ]
             )
-
-            # ==============================
-            # FULL PREPROCESSOR PIPELINE
-            # (INCLUDING FEATURE SELECTION)
-            # ==============================
             preprocessor = Pipeline(
                 steps=[
                     ("column_transformer", column_transformer),
@@ -126,7 +112,7 @@ class DataTransformation:
 
             logging.info("Applying preprocessing object on training and testing data")
 
-            # IMPORTANT: fit only on train
+        
             input_feature_train_arr = preprocessing_obj.fit_transform(
                 input_feature_train_df,
                 target_feature_train_df

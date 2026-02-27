@@ -33,7 +33,7 @@ class DataValidation:
     def validate_all_columns(self) -> bool:
         try:
             validation_status = True
-            # Load raw data from ingestion
+        
             data = pd.read_csv(os.path.join("artifacts", "data.csv"))
             all_cols = list(data.columns)
 

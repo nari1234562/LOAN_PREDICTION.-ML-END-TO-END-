@@ -5,8 +5,8 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 import numpy as np
-from sklearn.linear_model import LogisticRegression, SGDClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from xgboost import XGBClassifier
 
 from src.exception import CustomException
@@ -14,11 +14,9 @@ from src.logger import logging
 from src.utils import save_object, evaluate_models
 
 
-
 @dataclass
 class ModelTrainerConfig:
     trained_model_file_path: str = os.path.join("artifacts", "model.pkl")
-
 
 
 class ModelTrainer:
@@ -27,19 +25,19 @@ class ModelTrainer:
         self.model_trainer_config = ModelTrainerConfig()
 
     def initiate_model_trainer(self, train_array, test_array):
-
         try:
             logging.info("Splitting training and test data")
 
+        
             X_train = train_array[:, :-1]
             y_train = train_array[:, -1]
             X_test = test_array[:, :-1]
             y_test = test_array[:, -1]
 
-            # Handle imbalance for XGBoost
+        
             scale_pos_weight = (len(y_train) - sum(y_train)) / sum(y_train)
 
-            
+        
             models = {
                 "Logistic Regression": LogisticRegression(
                     max_iter=1000,
@@ -51,9 +49,10 @@ class ModelTrainer:
                     random_state=42
                 ),
 
-                "SGD Classifier": SGDClassifier(
-                    loss="log_loss",
-                    max_iter=1000,
+                "Gradient Boosting": GradientBoostingClassifier(
+                    n_estimators=100,
+                    learning_rate=0.1,
+                    max_depth=3,
                     random_state=42
                 ),
 
@@ -66,9 +65,8 @@ class ModelTrainer:
                 )
             }
 
-
+            
             params = {
-
                 "Logistic Regression": {
                     "C": [0.01, 0.1, 1, 10]
                 },
@@ -80,10 +78,13 @@ class ModelTrainer:
                     "min_samples_leaf": [2, 4]
                 },
 
-                "SGD Classifier": {
-                    "alpha": [0.0001, 0.001, 0.01]
+                "Gradient Boosting": {
+                    "n_estimators": [100, 200],
+                    "learning_rate": [0.01, 0.05, 0.1],
+                    "max_depth": [3, 5, 7],
+                    "min_samples_split": [2, 5],
+                    "min_samples_leaf": [1, 2]
                 },
-
 
                 "XGBoost": {
                     "n_estimators": [300, 500],
@@ -98,6 +99,8 @@ class ModelTrainer:
                 }
             }
 
+            # Evaluate all models
+            logging.info("Evaluating models...")
             model_report = evaluate_models(
                 X_train=X_train,
                 y_train=y_train,
@@ -107,24 +110,22 @@ class ModelTrainer:
                 param=params
             )
 
-            
             best_model_name = None
             best_model = None
             best_f1 = 0
 
             for model_name, model_info in model_report.items():
-
                 if model_info["test_f1"] > best_f1:
                     best_f1 = model_info["test_f1"]
                     best_model = model_info["model"]
                     best_model_name = model_name
 
-            print("\n==============================================")
+            print("\n===============")
             print(f"BEST MODEL: {best_model_name}")
             print(f"BEST TEST F1: {best_f1:.4f}")
-            print("==============================================")
+            print("==================")
 
-            # Save best model
+            
             save_object(
                 file_path=self.model_trainer_config.trained_model_file_path,
                 obj=best_model

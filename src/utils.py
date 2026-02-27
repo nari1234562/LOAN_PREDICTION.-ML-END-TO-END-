@@ -15,8 +15,10 @@ from sklearn.metrics import (
 from src.exception import CustomException
 
 
-
 def save_object(file_path, obj):
+    """
+    Save a Python object to the given file path using pickle.
+    """
     try:
         dir_path = os.path.dirname(file_path)
         os.makedirs(dir_path, exist_ok=True)
@@ -28,18 +30,37 @@ def save_object(file_path, obj):
         raise CustomException(e, sys)
 
 
+def load_object(file_path):
+    """
+    Load a Python object from the given file path using pickle.
+    """
+    try:
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        with open(file_path, "rb") as file_obj:
+            obj = pickle.load(file_obj)
+
+        return obj
+
+    except Exception as e:
+        raise CustomException(e, sys)
+
 
 def evaluate_models(X_train, y_train, X_test, y_test, models, param):
-
+    """
+    Train, tune (via GridSearchCV), and evaluate multiple models.
+    Returns a report dictionary containing metrics and the best model.
+    """
     try:
         report = {}
-        threshold = 0.6   # 🔥 Custom threshold
+        threshold = 0.6   
 
         for model_name, model in models.items():
 
-            print("\n====================================================")
+            print("\n====")
             print(f"MODEL: {model_name}")
-            print("====================================================")
+            print("======")
 
             model_params = param.get(model_name, {})
 
@@ -53,7 +74,6 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
             )
 
             grid_search.fit(X_train, y_train)
-
             best_model = grid_search.best_estimator_
 
             print("\nBest Parameters:")
@@ -61,7 +81,6 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
 
             
             if hasattr(best_model, "predict_proba"):
-
                 y_train_prob = best_model.predict_proba(X_train)[:, 1]
                 y_test_prob = best_model.predict_proba(X_test)[:, 1]
 
@@ -70,12 +89,9 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
 
                 train_auc = roc_auc_score(y_train, y_train_prob)
                 test_auc = roc_auc_score(y_test, y_test_prob)
-
             else:
-                
                 y_train_pred = best_model.predict(X_train)
                 y_test_pred = best_model.predict(X_test)
-
                 train_auc = None
                 test_auc = None
 
@@ -90,7 +106,7 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
 
             cm = confusion_matrix(y_test, y_test_pred)
 
-
+    
             print("\nTrain Metrics:")
             print(f"Precision: {train_precision:.4f}")
             print(f"Recall:    {train_recall:.4f}")
@@ -108,7 +124,7 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
             print("\nConfusion Matrix (Test):")
             print(cm)
 
-    
+        
             report[model_name] = {
                 "model": best_model,
                 "train_precision": train_precision,

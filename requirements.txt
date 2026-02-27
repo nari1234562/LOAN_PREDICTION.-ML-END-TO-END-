@@ -7,5 +7,6 @@ openpyxl
 dill
 xgboost
 lightgbm
+flask
 -e .
 

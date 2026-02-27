@@ -11,11 +11,11 @@ from src.components.model_trainer import ModelTrainer
 
 def run_training_pipeline():
     try:
-        # 1️⃣ DATA INGESTION
+        # 1️. DATA INGESTION
         ingestion = DataIngestion()
         train_data_path, test_data_path = ingestion.initiate_data_ingestion()
 
-        # 2️⃣ DATA VALIDATION
+        # 2️. DATA VALIDATION
         validation = DataValidation()
         validation_status = validation.validate_all_columns()
 
@@ -25,7 +25,7 @@ def run_training_pipeline():
 
         logging.info("Data Validation Passed")
 
-        # 3️⃣ DATA TRANSFORMATION
+        # 3️. DATA TRANSFORMATION
         data_transformation = DataTransformation()
         train_arr, test_arr, preprocessor_path = data_transformation.initiate_data_transformation(
             train_data_path,
@@ -34,7 +34,7 @@ def run_training_pipeline():
 
         logging.info("Data Transformation Completed")
 
-        # 4️⃣ MODEL TRAINING
+        # 4️. MODEL TRAINING
         model_trainer = ModelTrainer()
         best_f1 = model_trainer.initiate_model_trainer(train_arr, test_arr)
 

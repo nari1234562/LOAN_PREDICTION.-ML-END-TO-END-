@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Loan Prediction Web App</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        input, select { width: 220px; margin-bottom: 10px; padding: 5px; }
+        label { display: block; margin-top: 10px; }
+        .result { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Loan Prediction Web App</h1>
+
+    <form action="{{ url_for('predict_web') }}" method="post">
+        <label>Age: <input type="number" name="age" required></label>
+
+        <label>Gender:
+            <select name="gender" required>
+                <option selected disabled value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
+        </label>
+
+        <label>Education Level:
+            <select name="education_level" required>
+                <option selected disabled value="">Select Education</option>
+                <option value="High School">High School</option>
+                <option value="Associate">Associate</option>
+                <option value="Bachelor">Bachelor</option>
+                <option value="Master">Master</option>
+                <option value="PhD">PhD</option>
+            </select>
+        </label>
+
+        <label>Annual Income: <input type="number" name="annual_income" required></label>
+        <label>Employment Experience Years: <input type="number" step="0.1" name="employment_experience_years" required></label>
+
+        <label>Home Ownership Status:
+            <select name="home_ownership_status" required>
+                <option selected disabled value="">Select Ownership</option>
+                <option value="OWN">OWN</option>
+                <option value="RENT">RENT</option>
+                <option value="MORTGAGE">MORTGAGE</option>
+            </select>
+        </label>
+
+        <label>Loan Amount: <input type="number" name="loan_amount" required></label>
+
+        <label>Loan Purpose:
+            <select name="loan_purpose" required>
+                <option selected disabled value="">Select Purpose</option>
+                <option value="PERSONAL">PERSONAL</option>
+                <option value="HOME">HOME</option>
+                <option value="VEHICLE">VEHICLE</option>
+                <option value="EDUCATION">EDUCATION</option>
+            </select>
+        </label>
+
+        <label>Interest Rate (%): <input type="number" step="0.01" name="interest_rate" required></label>
+        <label>Loan to Income Ratio: <input type="number" step="0.01" name="loan_to_income_ratio" required></label>
+        <label>Credit History Length (Years): <input type="number" step="0.1" name="credit_history_length_years" required></label>
+        <label>Credit Score: <input type="number" name="credit_score" required></label>
+
+        <label>Prior Default Flag:
+            <select name="prior_default_flag" required>
+                <option selected disabled value="">Select</option>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </label>
+
+        <button type="submit">Predict Loan Status</button>
+    </form>
+
+    {% if status %}
+        <div class="result">
+            <p>Prediction: {{ prediction }}</p>
+            <p>Status: {{ status }}</p>
+            <p>Probability: {{ probability }}</p>
+        </div>
+    {% endif %}
+
+    {% if error %}
+        <div class="result" style="color:red;">
+            <p>Error: {{ error }}</p>
+        </div>
+    {% endif %}
+
+</body>
+</html>
