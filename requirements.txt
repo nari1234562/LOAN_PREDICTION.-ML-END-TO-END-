@@ -8,5 +8,6 @@ dill
 xgboost
 lightgbm
 flask
+mlflow
 -e .
 

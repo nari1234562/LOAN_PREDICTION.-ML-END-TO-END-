@@ -1,60 +1,7 @@
-import os
-import sys
-import pickle
-import numpy as np
-
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import (
-    f1_score,
-    precision_score,
-    recall_score,
-    confusion_matrix,
-    roc_auc_score
-)
-
-from src.exception import CustomException
-
-
-def save_object(file_path, obj):
-    """
-    Save a Python object to the given file path using pickle.
-    """
-    try:
-        dir_path = os.path.dirname(file_path)
-        os.makedirs(dir_path, exist_ok=True)
-
-        with open(file_path, "wb") as file_obj:
-            pickle.dump(obj, file_obj)
-
-    except Exception as e:
-        raise CustomException(e, sys)
-
-
-def load_object(file_path):
-    """
-    Load a Python object from the given file path using pickle.
-    """
-    try:
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"File not found: {file_path}")
-
-        with open(file_path, "rb") as file_obj:
-            obj = pickle.load(file_obj)
-
-        return obj
-
-    except Exception as e:
-        raise CustomException(e, sys)
-
-
 def evaluate_models(X_train, y_train, X_test, y_test, models, param):
-    """
-    Train, tune (via GridSearchCV), and evaluate multiple models.
-    Returns a report dictionary containing metrics and the best model.
-    """
     try:
         report = {}
-        threshold = 0.6   
+        threshold = 0.6
 
         for model_name, model in models.items():
 
@@ -76,10 +23,7 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
             grid_search.fit(X_train, y_train)
             best_model = grid_search.best_estimator_
 
-            print("\nBest Parameters:")
-            print(grid_search.best_params_)
-
-            
+            # Predictions
             if hasattr(best_model, "predict_proba"):
                 y_train_prob = best_model.predict_proba(X_train)[:, 1]
                 y_test_prob = best_model.predict_proba(X_test)[:, 1]
@@ -95,7 +39,7 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
                 train_auc = None
                 test_auc = None
 
-        
+            # Metrics
             train_precision = precision_score(y_train, y_train_pred)
             train_recall = recall_score(y_train, y_train_pred)
             train_f1 = f1_score(y_train, y_train_pred)
@@ -106,37 +50,46 @@ def evaluate_models(X_train, y_train, X_test, y_test, models, param):
 
             cm = confusion_matrix(y_test, y_test_pred)
 
-    
+            # ---------------- MLflow Logging ----------------
+            with mlflow.start_run(run_name=model_name):
+
+                mlflow.set_tag("model_name", model_name)
+                mlflow.set_tag("stage", "training")
+
+                mlflow.log_params(grid_search.best_params_)
+
+                mlflow.log_metric("train_precision", train_precision)
+                mlflow.log_metric("train_recall", train_recall)
+                mlflow.log_metric("train_f1", train_f1)
+
+                mlflow.log_metric("test_precision", test_precision)
+                mlflow.log_metric("test_recall", test_recall)
+                mlflow.log_metric("test_f1", test_f1)
+
+                if train_auc is not None:
+                    mlflow.log_metric("train_auc", train_auc)
+                    mlflow.log_metric("test_auc", test_auc)
+
+                mlflow.sklearn.log_model(best_model, artifact_path="model")
+
             print("\nTrain Metrics:")
-            print(f"Precision: {train_precision:.4f}")
-            print(f"Recall:    {train_recall:.4f}")
-            print(f"F1 Score:  {train_f1:.4f}")
+            print(f"Precision: {train_precision:.4f}  Recall: {train_recall:.4f}  F1: {train_f1:.4f}")
             if train_auc is not None:
-                print(f"ROC-AUC:   {train_auc:.4f}")
+                print(f"ROC-AUC: {train_auc:.4f}")
 
             print("\nTest Metrics:")
-            print(f"Precision: {test_precision:.4f}")
-            print(f"Recall:    {test_recall:.4f}")
-            print(f"F1 Score:  {test_f1:.4f}")
+            print(f"Precision: {test_precision:.4f}  Recall: {test_recall:.4f}  F1: {test_f1:.4f}")
             if test_auc is not None:
-                print(f"ROC-AUC:   {test_auc:.4f}")
+                print(f"ROC-AUC: {test_auc:.4f}")
 
-            print("\nConfusion Matrix (Test):")
+            print("\nConfusion Matrix:")
             print(cm)
 
-        
             report[model_name] = {
                 "model": best_model,
-                "train_precision": train_precision,
-                "train_recall": train_recall,
                 "train_f1": train_f1,
-                "train_auc": train_auc,
-                "test_precision": test_precision,
-                "test_recall": test_recall,
                 "test_f1": test_f1,
-                "test_auc": test_auc,
-                "confusion_matrix": cm,
-                "best_params": grid_search.best_params_
+                "test_auc": test_auc
             }
 
         return report

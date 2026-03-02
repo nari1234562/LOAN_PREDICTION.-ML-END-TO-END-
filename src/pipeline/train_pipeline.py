@@ -1,5 +1,5 @@
-
 import sys
+import mlflow
 from src.exception import CustomException
 from src.logger import logging
 
@@ -11,11 +11,16 @@ from src.components.model_trainer import ModelTrainer
 
 def run_training_pipeline():
     try:
-        # 1️. DATA INGESTION
+        # ✅ Set experiment ONCE here (important)
+        mlflow.set_experiment("Loan_Default_Model_Comparison")
+
+        logging.info("Training Pipeline Started")
+
+        # 1️⃣ DATA INGESTION
         ingestion = DataIngestion()
         train_data_path, test_data_path = ingestion.initiate_data_ingestion()
 
-        # 2️. DATA VALIDATION
+        # 2️⃣ DATA VALIDATION
         validation = DataValidation()
         validation_status = validation.validate_all_columns()
 
@@ -25,21 +30,24 @@ def run_training_pipeline():
 
         logging.info("Data Validation Passed")
 
-        # 3️. DATA TRANSFORMATION
+        # 3️⃣ DATA TRANSFORMATION
         data_transformation = DataTransformation()
-        train_arr, test_arr, preprocessor_path = data_transformation.initiate_data_transformation(
-            train_data_path,
-            test_data_path
+        train_arr, test_arr, preprocessor_path = (
+            data_transformation.initiate_data_transformation(
+                train_data_path,
+                test_data_path
+            )
         )
 
         logging.info("Data Transformation Completed")
 
-        # 4️. MODEL TRAINING
+        # 4️⃣ MODEL TRAINING (No best model selection now)
         model_trainer = ModelTrainer()
-        best_f1 = model_trainer.initiate_model_trainer(train_arr, test_arr)
+        model_trainer.initiate_model_trainer(train_arr, test_arr)
 
-        logging.info(f"Model Training Completed. Best F1 Score: {best_f1:.4f}")
-        print(f"Training pipeline finished successfully. Best F1 Score: {best_f1:.4f}")
+        logging.info("Model Training Completed Successfully")
+        print("\nTraining pipeline finished successfully.")
+        print("All models logged to MLflow.")
 
     except Exception as e:
         raise CustomException(e, sys)

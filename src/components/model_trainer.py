@@ -1,3 +1,5 @@
+# src/components/model_trainer.py
+
 import os
 import sys
 from dataclasses import dataclass
@@ -11,12 +13,13 @@ from xgboost import XGBClassifier
 
 from src.exception import CustomException
 from src.logger import logging
-from src.utils import save_object, evaluate_models
+from src.utils import evaluate_models
 
 
 @dataclass
 class ModelTrainerConfig:
-    trained_model_file_path: str = os.path.join("artifacts", "model.pkl")
+    # No automatic saving now (manual selection later)
+    artifacts_dir: str = "artifacts"
 
 
 class ModelTrainer:
@@ -28,16 +31,19 @@ class ModelTrainer:
         try:
             logging.info("Splitting training and test data")
 
-        
+            # Split features and target
             X_train = train_array[:, :-1]
             y_train = train_array[:, -1]
+
             X_test = test_array[:, :-1]
             y_test = test_array[:, -1]
 
-        
+            # Handle class imbalance for XGBoost
             scale_pos_weight = (len(y_train) - sum(y_train)) / sum(y_train)
 
-        
+            # ----------------------------
+            # Define Models
+            # ----------------------------
             models = {
                 "Logistic Regression": LogisticRegression(
                     max_iter=1000,
@@ -50,9 +56,6 @@ class ModelTrainer:
                 ),
 
                 "Gradient Boosting": GradientBoostingClassifier(
-                    n_estimators=100,
-                    learning_rate=0.1,
-                    max_depth=3,
                     random_state=42
                 ),
 
@@ -65,7 +68,9 @@ class ModelTrainer:
                 )
             }
 
-            
+            # ----------------------------
+            # Define Hyperparameters
+            # ----------------------------
             params = {
                 "Logistic Regression": {
                     "C": [0.01, 0.1, 1, 10]
@@ -99,8 +104,11 @@ class ModelTrainer:
                 }
             }
 
-            # Evaluate all models
-            logging.info("Evaluating models...")
+            # ----------------------------
+            # Train + Log via MLflow
+            # ----------------------------
+            logging.info("Training models and logging to MLflow...")
+
             model_report = evaluate_models(
                 X_train=X_train,
                 y_train=y_train,
@@ -110,31 +118,11 @@ class ModelTrainer:
                 param=params
             )
 
-            best_model_name = None
-            best_model = None
-            best_f1 = 0
+            logging.info("All models trained and logged successfully to MLflow.")
+            print("\nAll models trained and logged to MLflow successfully.")
 
-            for model_name, model_info in model_report.items():
-                if model_info["test_f1"] > best_f1:
-                    best_f1 = model_info["test_f1"]
-                    best_model = model_info["model"]
-                    best_model_name = model_name
-
-            print("\n===============")
-            print(f"BEST MODEL: {best_model_name}")
-            print(f"BEST TEST F1: {best_f1:.4f}")
-            print("==================")
-
-            
-            save_object(
-                file_path=self.model_trainer_config.trained_model_file_path,
-                obj=best_model
-            )
-
-            logging.info(f"Best Model: {best_model_name}")
-            logging.info(f"Best Test F1 Score: {best_f1:.4f}")
-
-            return best_f1
+            # No automatic selection
+            return model_report
 
         except Exception as e:
             raise CustomException(e, sys)
